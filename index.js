@@ -164,4 +164,4 @@ var sync = async () => {
 }
 
 setInterval(sync, 3600000);
-// sync();
+sync();
