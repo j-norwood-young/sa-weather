@@ -1,0 +1,17 @@
+{
+  "name": "jsweather",
+  "version": "1.0.0",
+  "description": "Weather for NLW",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jason Norwood-Young",
+  "license": "MIT",
+  "dependencies": {
+    "moment": "^2.24.0",
+    "restify": "^8.3.0",
+    "solar-calc": "^1.1.0",
+    "yr.no-forecast": "^2.1.0"
+  }
+}
