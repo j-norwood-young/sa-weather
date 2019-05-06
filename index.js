@@ -114,35 +114,80 @@ server.get(`/raw/:city/:date`, async (req, res) => {
     }
 })
 
-server.get(`/english/:city/:date`, async (req, res) => {
+const getData = async (req, res, next) => {
     try {
-        const data = JSON.parse(await fs.readFile(`./data/${ req.params.city }-${ req.params.date }.json`));
-        const pos = Cities[req.params.city];
-        const solarcalc = new SolarCalc(new Date(req.params.date), pos.lat, pos.lon);
-        let s = `Weather ${ req.params.city }, ${ moment(data.from).format('ddd DD/MM')}: ${ Icons[data.icon]}. Temp ${ data.minTemperature.value }C - ${ data.maxTemperature.value }C. Wind ${ data.windDirection.name } ${ beaufortWindName[data.windSpeed.beaufort * 1] }. Rain ${ data.rainDetails.rain }${ data.rainDetails.unit }. Sunrise ${ moment(solarcalc.sunrise).format("HH:mm") } Sunset ${ moment(solarcalc.sunset).format("HH:mm") }. ${ moonPhase(solarcalc.lunarIlluminosity) }`
-        res.send(s);
-    } catch(err) {
-        console.error(new Date(), err);
-        res.send(`Could not get weather info for ${req.params.city}`);
-    }
-})
-
-server.get(`/offset/:city/:offset`, async (req, res) => {
-    try {
-        const date = moment().add(req.params.offset, "days");
-        console.group(date.format("YYYY-MM-DD"));
-        const data = JSON.parse(await fs.readFile(`./data/${ req.params.city }-${ date.format("YYYY-MM-DD") }.json`));
+        var date = moment();
+        if (req.params.date) {
+            date = moment(req.params.date);
+        } else if (req.params.offset) {
+            date = moment().add(req.params.offset, "days");
+        }
+        const id = `${ req.params.city }-${ date.format("YYYY-MM-DD") }`;
+        const data = JSON.parse(await fs.readFile(`./data/${ id }.json`));
+        console.log(data);
         const pos = Cities[req.params.city];
         const solarcalc = new SolarCalc(new Date(date), pos.lat, pos.lon);
-        let s = `Weather ${ req.params.city }, ${ moment(data.from).format('ddd DD/MM')}: ${ Icons[data.icon]}. Temp ${ data.minTemperature.value }C - ${ data.maxTemperature.value }C. Wind ${ data.windDirection.name } ${ beaufortWindName[data.windSpeed.beaufort * 1] }. Rain ${ data.rainDetails.rain }${ data.rainDetails.unit }. Sunrise ${ moment(solarcalc.sunrise).format("HH:mm") } Sunset ${ moment(solarcalc.sunset).format("HH:mm") }. ${ moonPhase(solarcalc.lunarIlluminosity) }`
-        res.send(s);
+        const english = `Weather ${ req.params.city }, ${ moment(data.from).format('ddd DD/MM')}: ${ Icons[data.icon]}. Temp ${ data.minTemperature.value }C - ${ data.maxTemperature.value }C. Wind ${ data.windDirection.name } ${ beaufortWindName[data.windSpeed.beaufort * 1] }. Rain ${ data.rainDetails.rain }${ data.rainDetails.unit }. Sunrise ${ moment(solarcalc.sunrise).format("HH:mm") } Sunset ${ moment(solarcalc.sunset).format("HH:mm") }. ${ moonPhase(solarcalc.lunarIlluminosity) }`
+        res.locals = {
+            id,
+            data,
+            pos,
+            solarcalc,
+            english
+        }
+        next();
+    } catch(err) {
+        console.error(new Date(), err);
+        res.send(`Could not get weather info for ${req.params.city}`);
+    }
+}
+
+server.get(`/english/:city/:date`, getData, async (req, res) => {
+    try {
+        res.send(res.locals.english);
     } catch(err) {
         console.error(new Date(), err);
         res.send(`Could not get weather info for ${req.params.city}`);
     }
 })
 
-var sync = async () => {
+server.get(`/offset/:city/:offset`, getData, async (req, res) => {
+    try {
+        res.send(res.locals.english);
+    } catch(err) {
+        console.error(new Date(), err);
+        res.send(`Could not get weather info for ${req.params.city}`);
+    }
+})
+
+server.get(`/offset/rss/:city/:offset`, getData, async (req, res) => {
+    try {
+        res.send(`<rss version="2.0">
+<channel>
+<title>Weather feed</title>
+<description/>
+<link>http://protoscape.co.za/weather/</link>
+<lastBuildDate>${ new Date().toISOString() }</lastBuildDate>
+<pubDate>${ last_update.toISOString() }</pubDate>
+<item>
+<title>Weather feed for Cape Town</title>
+<description>
+${res.locals.english}. MTN Play.
+</description>
+<guid isPermaLink="false">${ res.locals.id }</guid>
+<pubDate>${ last_update.toISOString() }</pubDate>
+</item>
+</channel>
+</rss>`)
+    } catch(err) {
+        console.error(new Date(), err);
+        res.send(`Could not get weather info for ${req.params.city}`);
+    }
+})
+
+var last_update = new Date();
+
+const sync = async () => {
     try {
         for (i in Cities) {
             try {
@@ -154,6 +199,7 @@ var sync = async () => {
                     const fname = `./data/${ i }-${ date.format("YYYY-MM-DD") }.json`;
                     await fs.writeFile(fname, JSON.stringify(forecast));
                 }
+                last_update = new Date();
             } catch(err) {
                 console.error(new Date(), err);
             }
@@ -164,4 +210,4 @@ var sync = async () => {
 }
 
 setInterval(sync, 3600000);
-sync();
+// sync();
