@@ -162,7 +162,7 @@ server.get(`/offset/:city/:offset`, getData, async (req, res) => {
 
 server.get(`/offset/rss/:city/:offset`, getData, async (req, res) => {
     try {
-        res.send(`<rss version="2.0">
+        res.sendRaw(`<rss version="2.0">
 <channel>
 <title>Weather feed</title>
 <description/>
@@ -178,7 +178,7 @@ ${res.locals.english}. MTN Play.
 <pubDate>${ last_update.toISOString() }</pubDate>
 </item>
 </channel>
-</rss>`)
+</rss>`, { "Content-Type": "application/rss+xml" })
     } catch(err) {
         console.error(new Date(), err);
         res.send(`Could not get weather info for ${req.params.city}`);
