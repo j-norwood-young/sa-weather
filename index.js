@@ -167,15 +167,15 @@ server.get(`/offset/rss/:city/:offset`, getData, async (req, res) => {
 <title>Weather feed</title>
 <description/>
 <link>http://protoscape.co.za/weather/</link>
-<lastBuildDate>${ moment().format("YYYY-MM-DDTHH:mm:ss.SSS") }</lastBuildDate>
-<pubDate>${ moment(last_update).format("YYYY-MM-DDTHH:mm:ss.SSS") }</pubDate>
+<lastBuildDate>${ moment().format("YYYY-MM-DDTHH:mm:ss.SS") }</lastBuildDate>
+<pubDate>${ moment(last_update).format("YYYY-MM-DDTHH:mm:ss.SS") }</pubDate>
 <item>
 <title>Weather feed for Cape Town</title>
 <description>
 ${res.locals.english}. MTN Play.
 </description>
 <guid isPermaLink="false">${ res.locals.id }</guid>
-<pubDate>${ moment(last_update).format("YYYY-MM-DDTHH:mm:ss.SSS") }</pubDate>
+<pubDate>${ moment(last_update).format("YYYY-MM-DDTHH:mm:ss.SS") }</pubDate>
 </item>
 </channel>
 </rss>`, { "Content-Type": "application/rss+xml" })
