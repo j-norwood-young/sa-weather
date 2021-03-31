@@ -4,14 +4,16 @@
   "description": "Weather for NLW",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "nodemon": "nodemon index.js --ignore data/*"
   },
   "author": "Jason Norwood-Young",
   "license": "MIT",
   "dependencies": {
-    "moment": "^2.24.0",
-    "restify": "^8.3.0",
+    "moment": "^2.29.1",
+    "restify": "^8.5.1",
     "solar-calc": "^1.1.0",
-    "yr.no-forecast": "^2.1.0"
+    "axios": "0.21.1",
+    "xml2js": "0.4.23"
   }
 }

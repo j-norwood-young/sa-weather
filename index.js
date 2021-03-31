@@ -2,13 +2,7 @@ const fs = require("fs").promises;
 const SolarCalc = require("solar-calc");
 const restify = require("restify");
 const moment = require("moment");
-
-const yrno = require('yr.no-forecast')({
-    request: {
-      // make calls to locationforecast timeout after 15 seconds
-      timeout: 15000
-    }
-});
+const yrno = require("./libs/yrno");
 
 const Cities = {
     "Bloemfontein" : { lat: -29.085, lon: 26.159},
@@ -20,50 +14,6 @@ const Cities = {
     "Polokwane" : { lat: -23.896, lon: 29.448},
     "Pretoria" : { lat: -25.747, lon: 28.229},
     "Rustenburg" : { lat: -25.654, lon: 27.255},
-}
-
-const Icons = {
-    Sun: "Sunny",
-    LightCloud: "Light cloud",
-    PartlyCloud: "Partly cloudy",
-    Cloud: "Cloudy",
-    LightRainSun: "Intermittent light rain",
-    LightRainThunderSun: "Intermittent light rain and thunder",
-    SleetSun: "Some sleet",
-    SnowSun: "Some snow",
-    LightRain: "Light rain",
-    Rain: "Rain",
-    RainThunder: "Rain and thunder",
-    Sleet: "Sleet",
-    Snow: "Snow",
-    SnowThunder: "Snow and thunder",
-    Fog: "Fog",
-    SleetSunThunder: "Intermittent sleet and storms",
-    SnowSunThunder: "Intermittent snow and storms",
-    LightRainThunder: "Light rain with thunder",
-    SleetThunder: "Sleet with thunder",
-    DrizzleThunderSun: "Intermittent drizzle with thunder",
-    RainThunderSun: "Intermittent rain with thunder",
-    LightSleetThunderSun: "Intermittent light sleet with thunder",
-    HeavySleetThunderSun: "Heavy intermittent sleet with thunder",
-    LightSnowThunderSun: "Intermittent light snow with thunder",
-    HeavySnowThunderSun: "Intermittent heavy snow with thunder",
-    DrizzleThunder: "Drizzle with thunder",
-    LightSleetThunder: "Light sleet with thunder",
-    HeavySleetThunder: "Heavy sleet with thunder",
-    LightSnowThunder: "Light snow with thunder",
-    HeavySnowThunder: "Heavy snow with thunder",
-    DrizzleSun: "Intermittent drizzle",
-    RainSun: "Intermittent rain",
-    LightSleetSun: "Intermittent light sleet",
-    HeavySleetSun: "Intermittent heavy sleet",
-    LightSnowSun: "Intermittent light snow",
-    HeavysnowSun: "Intermittent heavy snow",
-    Drizzle: "Drizzle",
-    LightSleet: "Light sleet",
-    HeavySleet: "Heavy sleet",
-    LightSnow: "Light snow",
-    HeavySnow: "Heavy snow"
 }
 
 const beaufortWindName = [
@@ -106,7 +56,7 @@ server.listen(process.env.PORT || 7700, function () {
 
 server.get(`/raw/:city/:date`, async (req, res) => {
     try {
-        const data = JSON.parse(await fs.readFile(`./data/${ req.params.city }-${ req.params.date }.json`));
+        const data = JSON.parse(await fs.readFile(`./data/${ req.params.city }-${ req.params.date }-new.json`));
         res.send(data);
     } catch(err) {
         console.error(new Date(), err);
@@ -123,11 +73,10 @@ const getData = async (req, res, next) => {
             date = moment().add(req.params.offset, "days");
         }
         const id = `${ req.params.city }-${ date.format("YYYY-MM-DD") }`;
-        const data = JSON.parse(await fs.readFile(`./data/${ id }.json`));
-        console.log(data);
+        const data = JSON.parse(await fs.readFile(`./data/${ id }-new.json`));
         const pos = Cities[req.params.city];
         const solarcalc = new SolarCalc(new Date(date), pos.lat, pos.lon);
-        const english = `Weather ${ req.params.city }, ${ moment(data.from).format('ddd DD/MM')}: ${ Icons[data.icon]}. Temp ${ data.minTemperature.value }C - ${ data.maxTemperature.value }C. Wind ${ data.windDirection.name } ${ beaufortWindName[data.windSpeed.beaufort * 1] }. Rain ${ data.rainDetails.rain }${ data.rainDetails.unit }. Sunrise ${ moment(solarcalc.sunrise).format("HH:mm") } Sunset ${ moment(solarcalc.sunset).format("HH:mm") }. ${ moonPhase(solarcalc.lunarIlluminosity) }`
+        const english = `Weather ${ req.params.city }, ${ moment(data.from).format('ddd DD/MM')}: ${ data.morning.description} morn. ${ data.evening.description} eve. Temp ${ Math.round(data.day.temperature_min) }C - ${ Math.round(data.day.temperature_max) }C. Wind ${ data.day.wind_direction } ${ beaufortWindName[data.day.beaufort_scale] }. Rain ${ data.day.precipitation }mm. Sunrise ${ moment(solarcalc.sunrise).format("HH:mm") } Sunset ${ moment(solarcalc.sunset).format("HH:mm") }. ${ moonPhase(solarcalc.lunarIlluminosity) }`
         res.locals = {
             id,
             data,
@@ -192,13 +141,10 @@ const sync = async () => {
         for (i in Cities) {
             try {
                 console.log(new Date(), `Updating ${i}`);
-                const weather = await yrno.getWeather(Cities[i])
-                const forecasts = await weather.getFiveDaySummary();
-                for(forecast of forecasts) {
-                    const date = moment(new Date(forecast.from));
-                    const fname = `./data/${ i }-${ date.format("YYYY-MM-DD") }.json`;
-                    await fs.writeFile(fname, JSON.stringify(forecast));
-                }
+                const weather = await yrno.getWeatherTomorrow(Cities[i])
+                console.log(weather);
+                const fname = `./data/${ i }-${ moment().add(1, "day").format("YYYY-MM-DD") }-new.json`;
+                await fs.writeFile(fname, JSON.stringify(weather));
                 last_update = new Date();
             } catch(err) {
                 console.error(new Date(), err);
@@ -210,4 +156,4 @@ const sync = async () => {
 }
 
 setInterval(sync, 3600000);
-// sync();
+sync();
