@@ -135,7 +135,7 @@ const getWeatherTomorrow = async (pos) => {
         day.wind_speed_max = Math.max(...day.wind_speed);
         day.beaufort_scale = beaufortScale(day.wind_speed_max);
         
-        return { day, morning, evening };
+        return { day, morning, evening, date: tomorrow.format("YYYY-MM-DD") };
     } catch(err) {
         return Promise.reject(err);
     }

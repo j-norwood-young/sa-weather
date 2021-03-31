@@ -76,7 +76,7 @@ const getData = async (req, res, next) => {
         const data = JSON.parse(await fs.readFile(`./data/${ id }-new.json`));
         const pos = Cities[req.params.city];
         const solarcalc = new SolarCalc(new Date(date), pos.lat, pos.lon);
-        const english = `Weather ${ req.params.city }, ${ moment(data.from).format('ddd DD/MM')}: ${ data.morning.description} morn. ${ data.evening.description} eve. Temp ${ Math.round(data.day.temperature_min) }C - ${ Math.round(data.day.temperature_max) }C. Wind ${ data.day.wind_direction } ${ beaufortWindName[data.day.beaufort_scale] }. Rain ${ data.day.precipitation }mm. Sunrise ${ moment(solarcalc.sunrise).format("HH:mm") } Sunset ${ moment(solarcalc.sunset).format("HH:mm") }. ${ moonPhase(solarcalc.lunarIlluminosity) }`
+        const english = `Weather ${ req.params.city }, ${ moment(data.date).format('ddd DD/MM')}: ${ data.morning.description} morn. ${ data.evening.description} eve. Temp ${ Math.round(data.day.temperature_min) }C - ${ Math.round(data.day.temperature_max) }C. Wind ${ data.day.wind_direction } ${ beaufortWindName[data.day.beaufort_scale] }. Rain ${ data.day.precipitation }mm. Sunrise ${ moment(solarcalc.sunrise).format("HH:mm") } Sunset ${ moment(solarcalc.sunset).format("HH:mm") }. ${ moonPhase(solarcalc.lunarIlluminosity) }`
         res.locals = {
             id,
             data,
